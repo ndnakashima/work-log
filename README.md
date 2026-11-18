@@ -2,7 +2,7 @@
 
 A simple, private work log for tracking **what you did, why it mattered, and what came of it**, organized by project. I built it so I'd never again have to reconstruct a year of work from memory when it's time to update a resume, write a case study, prepare for a review, or draft a LinkedIn post.
 
-**[Live demo →](https://YOUR-USERNAME.github.io/work-log/)** (loads with my real 2026 work log, de-identified)
+**[Live demo →](https://ndnakashima.github.io/work-log/)** (loads with my real 2026 work log, de-identified)
 
 ## Why it exists
 
