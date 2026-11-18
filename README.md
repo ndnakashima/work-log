@@ -2,7 +2,7 @@
 
 A running record of my work in marketing operations, CRM and lifecycle marketing: **what I did, why it mattered, and what came of it**, organized by project.
 
-**[View the log →](https://ndnakashima.github.io/work-log/)**
+**[View the log →](https://YOUR-USERNAME.github.io/work-log/)**
 
 ## What's in it
 
