@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Work Log</title>
-<meta name="description" content="A personal work log: what I did, why, and what came of it. One timeline per project, searchable, exportable to Excel.">
+<title>Naomi D. Nakashima · Work Log</title>
+<meta name="description" content="Naomi D. Nakashima's work log: marketing ops, CRM and lifecycle projects, what I did, why, and what came of it.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Work+Sans:wght@400;600;700&display=swap" rel="stylesheet">
@@ -49,6 +49,8 @@ button{cursor:pointer}
 .plist .divider{height:1px;background:#3A3532;margin:8px 24px}
 .plist .paused .pname{color:var(--railmuted)}
 .mobile-pick{display:none}
+.owner{display:flex;flex-direction:column;gap:8px}
+.owner[hidden]{display:none}
 
 main{padding:40px clamp(18px,4vw,56px) 80px;max-width:980px;width:100%}
 .notice{background:var(--chip);border-left:3px solid var(--rose);padding:10px 14px;margin-bottom:24px;font-size:14px;border-radius:0 8px 8px 0}
@@ -119,20 +121,21 @@ dialog::backdrop{background:rgba(45,41,38,.55)}
   <aside class="rail">
     <div class="brand">
       <h1>Work Log<span></span></h1>
-      <p>What I did, why, and what came of it</p>
+      <p>Naomi D. Nakashima · marketing ops, CRM and lifecycle. What I did, why, and what came of it.</p>
     </div>
     <div class="rail-tools">
       <input class="search" id="q" type="search" placeholder="Search every entry" aria-label="Search every entry">
-      <div class="rail-btns">
-        <button class="rbtn primary" id="newEntry">Add entry</button>
-        <button class="rbtn" id="newProject">New project</button>
+      <div class="owner" hidden>
+        <div class="rail-btns">
+          <button class="rbtn primary" id="newEntry">Add entry</button>
+          <button class="rbtn" id="newProject">New project</button>
+        </div>
+        <button class="rbtn primary" id="publishBtn">Download data.js</button>
+        <div class="rail-btns">
+          <button class="rbtn" id="exportBtn">Export to Excel</button>
+          <button class="rbtn" id="discardBtn">Discard draft</button>
+        </div>
       </div>
-      <button class="rbtn" id="exportBtn">Export to Excel</button>
-      <div class="rail-btns">
-        <button class="rbtn" id="backupBtn">Back up (JSON)</button>
-        <button class="rbtn" id="restoreBtn">Restore</button>
-      </div>
-      <input type="file" id="restoreFile" accept="application/json,.json" hidden>
     </div>
     <div class="mobile-pick"><select id="mpick" aria-label="Choose a project"></select></div>
     <ul class="plist" id="plist"></ul>
@@ -182,23 +185,28 @@ dialog::backdrop{background:rgba(45,41,38,.55)}
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="sample-data.js"></script>
+<script src="data.js"></script>
 <script>
-/* ---------- Storage: everything lives in this browser's localStorage ---------- */
-const KEY='worklog.v1';
+/* ---------- Modes ----------
+   Public (default): read-only view of data.js, the published log.
+   Edit (?edit in the URL): editing tools; changes save as a draft in this browser only.
+   Publishing = downloading data.js and uploading it to the GitHub repo. Visitors can never change the site. */
+const EDIT=new URLSearchParams(location.search).has('edit');
+const KEY='worklog.draft.v1';
+const published=()=>JSON.parse(JSON.stringify(window.LOG_DATA||{projects:[],entries:[]}));
 const Store={
   load(){
-    try{const raw=localStorage.getItem(KEY);if(raw){const d=JSON.parse(raw);if(d&&Array.isArray(d.projects)&&Array.isArray(d.entries))return{data:d,sample:false}}}catch(e){}
-    const seed=window.SAMPLE_DATA||{projects:[],entries:[]};
-    return{data:JSON.parse(JSON.stringify(seed)),sample:true};
+    if(EDIT){try{const raw=localStorage.getItem(KEY);if(raw){const d=JSON.parse(raw);if(d&&Array.isArray(d.projects)&&Array.isArray(d.entries))return{data:d,draft:true}}}catch(e){}}
+    return{data:published(),draft:false};
   },
   save(){
+    if(!EDIT)return false;
     try{localStorage.setItem(KEY,JSON.stringify({projects:S.projects,entries:S.entries}));return true}
-    catch(e){toast('Could not save. Browser storage may be full or blocked.');return false}
+    catch(e){toast('Could not save the draft. Browser storage may be full or blocked.');return false}
   }
 };
 
-const S={projects:[],entries:[],sel:'__all',q:'',sample:false};
+const S={projects:[],entries:[],sel:'__all',q:'',draft:false};
 const FIELDS=[['what','What I did'],['why','Why it mattered'],['facts','Supporting facts and sources'],['outcome','Outcome and impact'],['skills','Skills and tools'],['angle','Story angle']];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -211,7 +219,7 @@ function sortEntries(a){return a.slice().sort((x,y)=>(y.date||'').localeCompare(
 function lastDate(pid){let m='';for(const e of S.entries)if(e.projectId===pid&&(e.date||'')>m)m=e.date;return m}
 function sortedProjects(){return S.projects.slice().sort((a,b)=>{const pa=a.status==='Active'?0:1,pb=b.status==='Active'?0:1;if(pa!==pb)return pa-pb;return lastDate(b.id).localeCompare(lastDate(a.id))||String(a.name).localeCompare(String(b.name))})}
 function matches(e){if(!S.q)return true;const p=projById(e.projectId);const hay=[e.title,e.what,e.why,e.facts,e.outcome,e.skills,e.angle,p&&p.name,p&&p.codes].join(' ').toLowerCase();return S.q.toLowerCase().split(/\s+/).filter(Boolean).every(w=>hay.includes(w))}
-function commit(){S.sample=false;Store.save();render()}
+function commit(){if(!EDIT)return;S.draft=true;Store.save();render()}
 
 /* ---------- Rendering ---------- */
 function renderRail(){
@@ -229,18 +237,18 @@ function entryCard(e,showProj){
   for(const [k,l] of FIELDS)if(e[k])dl+=`<div><dt>${l}</dt><dd>${esc(e[k])}</dd></div>`;
   return `<li><div class="tdate">${fmtDate(e.date)}</div><article class="card">
     ${showProj&&p?`<button class="cproj" data-p="${esc(p.id)}">${esc(p.name)}</button>`:''}
-    <div class="ctop"><h3>${esc(e.title||'Untitled entry')}</h3><button class="edit" data-edit="${esc(e.id)}" aria-label="Edit entry">Edit</button></div>
-    ${dl?`<dl>${dl}</dl>`:''}${e.source?`<div class="src">${esc(e.source)}</div>`:''}
+    <div class="ctop"><h3>${esc(e.title||'Untitled entry')}</h3>${EDIT?`<button class="edit" data-edit="${esc(e.id)}" aria-label="Edit entry">Edit</button>`:''}</div>
+    ${dl?`<dl>${dl}</dl>`:''}${EDIT&&e.source?`<div class="src">${esc(e.source)}</div>`:''}
   </article></li>`;
 }
 function renderMain(){
   const m=$('#main');
-  const notice=S.sample?`<div class="notice">This is Naomi D. Nakashima's 2026 work log: real projects and results, with employer details de-identified. Want to use it yourself? Delete these projects and add your own. Everything you add saves only in your browser.</div>`:'';
+  const notice=EDIT?`<div class="notice"><strong>Edit mode.</strong> ${S.draft?'You have unpublished changes saved in this browser.':'No unpublished changes.'} To publish, click <strong>Download data.js</strong> and upload it to the GitHub repo.</div>`:'';
   if(S.sel==='__all'||!projById(S.sel)){
     const list=sortEntries(S.entries.filter(matches));
     m.innerHTML=`${notice}<header class="phead"><h2>${S.q?'Search results':'All activity'}</h2>
       <p class="summary">${S.q?`Entries matching “${esc(S.q)}” across every project.`:'Everything in the log, newest first, so you can see what happened in what order.'}</p></header>
-      ${list.length?`<ol class="tl">${list.map(e=>entryCard(e,true)).join('')}</ol>`:`<p class="empty">${S.q?'No entries match that search. Try a project code or a single word.':'No entries yet. Create a project, then add your first entry.'}</p>`}`;
+      ${list.length?`<ol class="tl">${list.map(e=>entryCard(e,true)).join('')}</ol>`:`<p class="empty">${S.q?'No entries match that search. Try a project code or a single word.':'No entries yet.'}</p>`}`;
     return;
   }
   const p=projById(S.sel);
@@ -250,14 +258,15 @@ function renderMain(){
   m.innerHTML=`${notice}<header class="phead"><h2>${esc(p.name)}</h2>
     <div class="codes"><span class="status ${st.toLowerCase()}">${esc(st)}</span>${codes.map(c=>`<span class="code">${esc(c)}</span>`).join('')}</div>
     ${p.summary?`<p class="summary">${esc(p.summary)}</p>`:''}
-    <div class="pactions"><button class="btn primary" data-add="${esc(p.id)}">Add entry</button><button class="btn" data-editp="${esc(p.id)}">Edit project</button><button class="btn danger" data-delp="${esc(p.id)}">Delete project</button></div>
+    ${EDIT?`<div class="pactions"><button class="btn primary" data-add="${esc(p.id)}">Add entry</button><button class="btn" data-editp="${esc(p.id)}">Edit project</button><button class="btn danger" data-delp="${esc(p.id)}">Delete project</button></div>`:''}
   </header>
   ${list.length?`<ol class="tl">${list.map(e=>entryCard(e,false)).join('')}</ol>`:`<p class="empty">${S.q?'No entries in this project match that search.':'No entries for this project yet.'}</p>`}`;
 }
-function render(){renderRail();renderMain();$('#exportBtn').hidden=!(window.XLSX&&S.entries.length)}
+function render(){renderRail();renderMain();document.querySelector('.owner').hidden=!EDIT;$('#exportBtn').hidden=!(window.XLSX&&S.entries.length)}
 function select(id){S.sel=id;render();window.scrollTo(0,0)}
 
 document.addEventListener('click',ev=>{
+  if(!EDIT&&ev.target.closest('[data-edit],[data-add],[data-editp],[data-delp]'))return;
   const b=ev.target.closest('[data-p],[data-edit],[data-add],[data-editp],[data-delp]');if(!b)return;
   if(b.dataset.p)select(b.dataset.p);
   else if(b.dataset.edit)openEntry(S.entries.find(e=>e.id===b.dataset.edit));
@@ -336,25 +345,22 @@ $('#exportBtn').onclick=()=>{
   XLSX.writeFile(wb,'Work-Log-'+today()+'.xlsx');toast('Export downloaded');
 };
 
-/* ---------- Backup and restore (JSON) ---------- */
-$('#backupBtn').onclick=()=>{
-  const blob=new Blob([JSON.stringify({projects:S.projects,entries:S.entries},null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Work-Log-backup-'+today()+'.json';a.click();URL.revokeObjectURL(a.href);
-  toast('Backup downloaded');
+/* ---------- Publish and discard (edit mode only) ---------- */
+$('#publishBtn').onclick=()=>{
+  const header='/*\n  Naomi D. Nakashima\'s work log. Real projects and results, de-identified.\n  To update: open the site with ?edit, make changes, click "Download data.js", and upload the file here.\n*/\n';
+  const body=header+'window.LOG_DATA = '+JSON.stringify({projects:S.projects,entries:S.entries},null,2)+';\n';
+  const blob=new Blob([body],{type:'text/javascript'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='data.js';a.click();URL.revokeObjectURL(a.href);
+  toast('data.js downloaded. Upload it to GitHub to publish.');
 };
-$('#restoreBtn').onclick=()=>$('#restoreFile').click();
-$('#restoreFile').onchange=async e=>{
-  const f=e.target.files[0];e.target.value='';if(!f)return;
-  try{
-    const d=JSON.parse(await f.text());
-    if(!Array.isArray(d.projects)||!Array.isArray(d.entries))throw 0;
-    if(!confirm(`Replace everything in this log with ${d.projects.length} projects and ${d.entries.length} entries from the backup?`))return;
-    S.projects=d.projects;S.entries=d.entries;S.sel='__all';commit();toast('Backup restored');
-  }catch(err){toast('That file is not a Work Log backup.')}
+$('#discardBtn').onclick=()=>{
+  if(!confirm('Discard unpublished changes and go back to the published log?'))return;
+  try{localStorage.removeItem(KEY)}catch(e){}
+  const d=published();S.projects=d.projects;S.entries=d.entries;S.draft=false;S.sel='__all';render();toast('Draft discarded');
 };
 
 /* ---------- Boot ---------- */
-const loaded=Store.load();S.projects=loaded.data.projects;S.entries=loaded.data.entries;S.sample=loaded.sample;
+const loaded=Store.load();S.projects=loaded.data.projects;S.entries=loaded.data.entries;S.draft=loaded.draft;
 render();
 </script>
 </body>

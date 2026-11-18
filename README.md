@@ -1,59 +1,46 @@
-# Work Log
+# Work Log · Naomi D. Nakashima
 
-A simple, private work log for tracking **what you did, why it mattered, and what came of it**, organized by project. I built it so I'd never again have to reconstruct a year of work from memory when it's time to update a resume, write a case study, prepare for a review, or draft a LinkedIn post.
+A running record of my work in marketing operations, CRM and lifecycle marketing: **what I did, why it mattered, and what came of it**, organized by project.
 
-**[Live demo →](https://ndnakashima.github.io/work-log/)** (loads with my real 2026 work log, de-identified)
+**[View the log →](https://YOUR-USERNAME.github.io/work-log/)**
 
-## Why it exists
+## What's in it
 
-When you work across a dozen projects at once, the details blur fast: what shipped when, which number moved, why a decision was made. Each entry captures the same structured fields, so the log turns directly into resume bullets, interview stories and case studies.
+My 2026 work: CRM architecture and consent design, a full CRM audit, governance and naming standards, SMS safeguards, attribution, dashboards, lifecycle journeys, quiz funnels, AI in marketing ops, and my side project, Yazzah.
 
-## Features
+Entries are real but de-identified. My employer is described as "a healthcare company," colleagues and agencies aren't named, and internal figures are rounded or left out.
 
-- **One timeline per project**, plus an "All activity" view that shows everything in the order it happened
-- **Structured entries:** what I did, why it mattered, supporting facts and sources, outcome, skills and tools, and a one-line story angle
-- **Search** across every entry, project name and project code
-- **Project status** (Active, Paused, Done) and codes/nicknames, so short names find the right project
-- **Export to Excel:** one sheet for all activity, then one sheet per project
-- **Back up and restore** the whole log as a JSON file
-- **Private by default:** everything is stored in your own browser (localStorage). No account, no server, no tracking
-- Responsive layout and automatic dark mode
+## How it works
 
-## Use it
+- **Public view:** browse by project or see everything in order, and search across every entry. The site is read-only.
+- **Edit mode (for me):** opening the site with `?edit` shows the editing tools. Changes save as a draft in that browser only. Publishing means downloading `data.js` and committing it to this repo, so only the repo owner can change what the public sees.
+- **Excel export** in edit mode: one sheet for all activity, then one per project.
 
-1. Open `index.html` in any modern browser, or use the live demo.
-2. Explore the sample data, then create your own project and add entries.
-3. Click **Back up (JSON)** regularly. Browser storage can be cleared, and a backup is the only copy that leaves your browser.
-
-The log opens with my own entries. To use it for yourself, delete those projects in the app (your copy saves in your browser), or fork the repo and replace the arrays in `sample-data.js` with empty ones (`projects: []`, `entries: []`).
-
-## How it's built
+## Built with
 
 - A single HTML file with vanilla JavaScript and CSS, no build step and no framework
+- Data in `data.js`, so updates are one file
 - [SheetJS](https://sheetjs.com/) for the Excel export
 - Fraunces and Work Sans from Google Fonts
+- Responsive layout and automatic dark mode
 
 ## Data model
 
 ```json
 {
   "projects": [
-    { "id": "welcome-series", "name": "Welcome Series Rebuild", "codes": "WELC, onboarding", "status": "Active", "summary": "..." }
+    { "id": "crm-audit", "name": "CRM Audit & Data Quality", "codes": "audit, data quality", "status": "Active", "summary": "..." }
   ],
   "entries": [
     {
-      "id": "abc123", "projectId": "welcome-series", "date": "2026-05-20",
+      "id": "a1", "projectId": "crm-audit", "date": "2026-10-08",
       "title": "...", "what": "...", "why": "...", "facts": "...",
-      "outcome": "...", "skills": "...", "angle": "...", "source": "Added by hand"
+      "outcome": "...", "skills": "...", "angle": "..."
     }
   ]
 }
 ```
 
-## About
-
-Built by **Naomi D. Nakashima**, marketing operations and lifecycle leader. The entries in `sample-data.js` are my real work from 2026, de-identified: my employer is described generically, colleagues and agencies aren't named, and internal figures are rounded or left out.
-
 ## License
 
-MIT. See [LICENSE](LICENSE).
+The code is MIT licensed (see [LICENSE](LICENSE)). The work log content in `data.js` is © Naomi D. Nakashima.
