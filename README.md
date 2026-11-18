@@ -2,7 +2,7 @@
 
 A simple, private work log for tracking **what you did, why it mattered, and what came of it**, organized by project. I built it so I'd never again have to reconstruct a year of work from memory when it's time to update a resume, write a case study, prepare for a review, or draft a LinkedIn post.
 
-**[Live demo →](https://ndnakashima.github.io/work-log/)** (loads with fictional sample data)
+**[Live demo →](https://YOUR-USERNAME.github.io/work-log/)** (loads with my real 2026 work log, de-identified)
 
 ## Why it exists
 
@@ -25,7 +25,7 @@ When you work across a dozen projects at once, the details blur fast: what shipp
 2. Explore the sample data, then create your own project and add entries.
 3. Click **Back up (JSON)** regularly. Browser storage can be cleared, and a backup is the only copy that leaves your browser.
 
-To start with an empty log instead of samples, replace the arrays in `sample-data.js` with empty ones (`projects: []`, `entries: []`).
+The log opens with my own entries. To use it for yourself, delete those projects in the app (your copy saves in your browser), or fork the repo and replace the arrays in `sample-data.js` with empty ones (`projects: []`, `entries: []`).
 
 ## How it's built
 
@@ -52,7 +52,7 @@ To start with an empty log instead of samples, replace the arrays in `sample-dat
 
 ## About
 
-Built by **Naomi D. Nakashima**, marketing operations and lifecycle leader. All sample data in this repository is fictional.
+Built by **Naomi D. Nakashima**, marketing operations and lifecycle leader. The entries in `sample-data.js` are my real work from 2026, de-identified: my employer is described generically, colleagues and agencies aren't named, and internal figures are rounded or left out.
 
 ## License
 

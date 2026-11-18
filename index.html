@@ -235,7 +235,7 @@ function entryCard(e,showProj){
 }
 function renderMain(){
   const m=$('#main');
-  const notice=S.sample?`<div class="notice">You're looking at sample data. Add your own entry or project and it will be saved in this browser. To start fresh, delete the sample projects' entries or restore from a backup.</div>`:'';
+  const notice=S.sample?`<div class="notice">This is Naomi D. Nakashima's 2026 work log: real projects and results, with employer details de-identified. Want to use it yourself? Delete these projects and add your own. Everything you add saves only in your browser.</div>`:'';
   if(S.sel==='__all'||!projById(S.sel)){
     const list=sortEntries(S.entries.filter(matches));
     m.innerHTML=`${notice}<header class="phead"><h2>${S.q?'Search results':'All activity'}</h2>
