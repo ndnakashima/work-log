@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Work Log</title>
+<meta name="description" content="A personal work log: what I did, why, and what came of it. One timeline per project, searchable, exportable to Excel.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Work+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --espresso:#2D2926;--warm:#EDEAE5;--greige:#CEC4B9;--rose:#C08B89;--camel:#CEA480;--wine:#7A3E48;
+  --bg:#F6F4F0;--panel:#FFFFFF;--ink:#2D2926;--muted:#6E645E;--line:#E2DCD4;
+  --accent:var(--wine);--chip:var(--warm);--rail:var(--espresso);--railink:#EDEAE5;--railmuted:#B5A99F;--railsel:#3A3532;
+  box-sizing:border-box;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#1B1817;--panel:#252120;--ink:#EDEAE5;--muted:#B5A99F;--line:#3A3532;--accent:#C08B89;--chip:#2F2A28;--rail:#141211;--railsel:#2A2523}
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Work Sans",Arial,sans-serif;font-size:15px;line-height:1.55}
+h1,h2,h3,h4{font-family:Fraunces,Georgia,serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--camel);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:100%}
+.rail{background:var(--rail);color:var(--railink);padding:28px 0 24px;display:flex;flex-direction:column;gap:18px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{padding:0 24px}
+.brand h1{margin:0;font-size:30px;line-height:1;font-weight:700}
+.brand h1 span{display:block;width:34px;height:4px;background:var(--camel);margin-top:12px;border-radius:2px}
+.brand p{margin:12px 0 0;color:var(--railmuted);font-size:13px}
+.rail-tools{padding:0 24px;display:flex;flex-direction:column;gap:8px}
+.search{width:100%;background:#3A3532;border:1px solid #4A4440;border-radius:8px;padding:9px 11px;color:var(--railink)}
+.search::placeholder{color:var(--railmuted)}
+.rail-btns{display:flex;gap:8px}
+.rbtn{flex:1;background:transparent;border:1px solid #4A4440;color:var(--railink);border-radius:8px;padding:8px 10px;font-size:13px}
+.rbtn:hover{border-color:var(--camel)}
+.rbtn.primary{background:var(--wine);border-color:var(--wine);color:#fff}
+.plist{list-style:none;margin:0;padding:0}
+.plist li button{width:100%;text-align:left;background:none;border:0;border-left:3px solid transparent;padding:9px 21px;display:flex;justify-content:space-between;gap:10px;align-items:baseline;color:var(--railink)}
+.plist li button:hover{background:var(--railsel)}
+.plist li button[aria-current="true"]{background:var(--railsel);border-left-color:var(--camel)}
+.plist .pname{font-size:14px;line-height:1.3}
+.plist .pmeta{font-size:12px;color:var(--railmuted)}
+.plist .divider{height:1px;background:#3A3532;margin:8px 24px}
+.plist .paused .pname{color:var(--railmuted)}
+.mobile-pick{display:none}
+
+main{padding:40px clamp(18px,4vw,56px) 80px;max-width:980px;width:100%}
+.notice{background:var(--chip);border-left:3px solid var(--rose);padding:10px 14px;margin-bottom:24px;font-size:14px;border-radius:0 8px 8px 0}
+.phead{border-bottom:2px solid var(--camel);padding-bottom:20px;margin-bottom:28px}
+.phead h2{margin:0;font-size:clamp(26px,3.4vw,36px);line-height:1.1}
+.codes{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.code{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:1px 9px;font-size:12px;color:var(--muted)}
+.status{font-size:12px;padding:1px 9px;border-radius:999px;border:1px solid var(--accent);color:var(--accent)}
+.status.done,.status.paused{border-color:var(--greige);color:var(--muted)}
+.summary{margin:14px 0 0;max-width:68ch}
+.pactions{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 13px;font-size:13px}
+.btn:hover{border-color:var(--camel)}
+.btn.primary{background:var(--wine);border-color:var(--wine);color:#fff}
+.btn.danger{color:var(--wine)}
+
+.tl{list-style:none;margin:0;padding:0}
+.tl>li{display:grid;grid-template-columns:110px minmax(0,1fr);gap:20px;position:relative;padding-bottom:26px}
+.tl>li::before{content:"";position:absolute;left:125px;top:8px;bottom:0;width:1px;background:var(--line)}
+.tl>li:last-child::before{display:none}
+.tdate{font-size:13px;color:var(--muted);text-align:right;padding-top:2px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;position:relative;margin-left:12px}
+.card::before{content:"";position:absolute;left:-18px;top:8px;width:9px;height:9px;border-radius:50%;background:var(--rose);box-shadow:0 0 0 3px var(--bg)}
+.card h3{margin:0;font-size:18px;line-height:1.3}
+.ctop{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.cproj{background:none;border:0;padding:0;color:var(--accent);font-size:12px;font-weight:700;margin-bottom:4px;text-align:left}
+.cproj:hover{text-decoration:underline}
+.edit{background:none;border:0;color:var(--muted);font-size:13px;padding:2px 4px}
+.edit:hover{color:var(--accent)}
+dl{margin:10px 0 0;display:grid;gap:10px}
+dt{font-size:12px;font-weight:700;color:var(--muted)}
+dd{margin:2px 0 0;white-space:pre-wrap;max-width:72ch}
+.src{margin-top:12px;font-size:12px;color:var(--muted)}
+.empty{padding:40px 0;color:var(--muted);max-width:52ch}
+
+dialog{border:0;border-radius:14px;padding:0;width:min(640px,94vw);background:var(--panel);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(45,41,38,.55)}
+.dhead{background:var(--espresso);color:var(--warm);padding:16px 22px;border-bottom:3px solid var(--camel)}
+.dhead h4{margin:0;font-size:18px}
+.dbody{padding:18px 22px;display:grid;gap:12px;max-height:68vh;overflow:auto}
+.dbody label{display:grid;gap:4px;font-size:12px;font-weight:700;color:var(--muted)}
+.dbody input,.dbody select,.dbody textarea{font-weight:400;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+.dbody textarea{min-height:68px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dfoot{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.dfoot .spacer{flex:1}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:var(--espresso);color:var(--warm);padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+
+@media (max-width:780px){
+  .app{grid-template-columns:1fr}
+  .rail{position:static;height:auto;padding:20px 0 18px}
+  .plist{display:none}
+  .mobile-pick{display:block;padding:0 24px}
+  .mobile-pick select{width:100%;background:#3A3532;border:1px solid #4A4440;border-radius:8px;padding:9px 11px;color:var(--railink)}
+  main{padding-top:26px}
+  .tl>li{grid-template-columns:1fr;gap:6px}
+  .tl>li::before,.card::before{display:none}
+  .tdate{text-align:left}
+  .card{margin-left:0}
+  .row2{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <h1>Work Log<span></span></h1>
+      <p>What I did, why, and what came of it</p>
+    </div>
+    <div class="rail-tools">
+      <input class="search" id="q" type="search" placeholder="Search every entry" aria-label="Search every entry">
+      <div class="rail-btns">
+        <button class="rbtn primary" id="newEntry">Add entry</button>
+        <button class="rbtn" id="newProject">New project</button>
+      </div>
+      <button class="rbtn" id="exportBtn">Export to Excel</button>
+      <div class="rail-btns">
+        <button class="rbtn" id="backupBtn">Back up (JSON)</button>
+        <button class="rbtn" id="restoreBtn">Restore</button>
+      </div>
+      <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+    </div>
+    <div class="mobile-pick"><select id="mpick" aria-label="Choose a project"></select></div>
+    <ul class="plist" id="plist"></ul>
+  </aside>
+  <main id="main"></main>
+</div>
+
+<dialog id="entryDlg">
+  <div class="dhead"><h4 id="entryDlgTitle">Add entry</h4></div>
+  <div class="dbody">
+    <div class="row2">
+      <label>Project<select id="e_project"></select></label>
+      <label>Date<input type="date" id="e_date"></label>
+    </div>
+    <label>Title<input id="e_title" placeholder="One line on what happened"></label>
+    <label>What I did<textarea id="e_what"></textarea></label>
+    <label>Why it mattered<textarea id="e_why"></textarea></label>
+    <label>Supporting facts and sources<textarea id="e_facts" placeholder="Stats, and where they came from"></textarea></label>
+    <label>Outcome and impact<textarea id="e_outcome" placeholder="Fill in when results come in"></textarea></label>
+    <label>Skills and tools<input id="e_skills"></label>
+    <label>Story angle<input id="e_angle" placeholder="One-line hook for LinkedIn, interviews, or a review"></label>
+  </div>
+  <div class="dfoot">
+    <button class="btn danger" id="e_delete">Delete entry</button>
+    <span class="spacer"></span>
+    <button class="btn" id="e_cancel">Cancel</button>
+    <button class="btn primary" id="e_save">Save entry</button>
+  </div>
+</dialog>
+
+<dialog id="projDlg">
+  <div class="dhead"><h4 id="projDlgTitle">New project</h4></div>
+  <div class="dbody">
+    <label>Project name<input id="p_name"></label>
+    <div class="row2">
+      <label>Codes and nicknames<input id="p_codes" placeholder="Comma separated, e.g. WELC, welcome series"></label>
+      <label>Status<select id="p_status"><option>Active</option><option>Paused</option><option>Done</option></select></label>
+    </div>
+    <label>What this project is<textarea id="p_summary"></textarea></label>
+  </div>
+  <div class="dfoot">
+    <span class="spacer"></span>
+    <button class="btn" id="p_cancel">Cancel</button>
+    <button class="btn primary" id="p_save">Save project</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="sample-data.js"></script>
+<script>
+/* ---------- Storage: everything lives in this browser's localStorage ---------- */
+const KEY='worklog.v1';
+const Store={
+  load(){
+    try{const raw=localStorage.getItem(KEY);if(raw){const d=JSON.parse(raw);if(d&&Array.isArray(d.projects)&&Array.isArray(d.entries))return{data:d,sample:false}}}catch(e){}
+    const seed=window.SAMPLE_DATA||{projects:[],entries:[]};
+    return{data:JSON.parse(JSON.stringify(seed)),sample:true};
+  },
+  save(){
+    try{localStorage.setItem(KEY,JSON.stringify({projects:S.projects,entries:S.entries}));return true}
+    catch(e){toast('Could not save. Browser storage may be full or blocked.');return false}
+  }
+};
+
+const S={projects:[],entries:[],sel:'__all',q:'',sample:false};
+const FIELDS=[['what','What I did'],['why','Why it mattered'],['facts','Supporting facts and sources'],['outcome','Outcome and impact'],['skills','Skills and tools'],['angle','Story angle']];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function fmtDate(d){if(!d)return'';const p=String(d).split('-').map(Number);if(p.length<3||!p[0])return esc(d);return new Date(p[0],p[1]-1,p[2]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
+function today(){const t=new Date();return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0')}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2400)}
+function projById(id){return S.projects.find(p=>p.id===id)}
+function sortEntries(a){return a.slice().sort((x,y)=>(y.date||'').localeCompare(x.date||'')||(y.createdAt||'').localeCompare(x.createdAt||''))}
+function lastDate(pid){let m='';for(const e of S.entries)if(e.projectId===pid&&(e.date||'')>m)m=e.date;return m}
+function sortedProjects(){return S.projects.slice().sort((a,b)=>{const pa=a.status==='Active'?0:1,pb=b.status==='Active'?0:1;if(pa!==pb)return pa-pb;return lastDate(b.id).localeCompare(lastDate(a.id))||String(a.name).localeCompare(String(b.name))})}
+function matches(e){if(!S.q)return true;const p=projById(e.projectId);const hay=[e.title,e.what,e.why,e.facts,e.outcome,e.skills,e.angle,p&&p.name,p&&p.codes].join(' ').toLowerCase();return S.q.toLowerCase().split(/\s+/).filter(Boolean).every(w=>hay.includes(w))}
+function commit(){S.sample=false;Store.save();render()}
+
+/* ---------- Rendering ---------- */
+function renderRail(){
+  const ps=sortedProjects();
+  const cnt=id=>S.entries.filter(e=>e.projectId===id).length;
+  let h=`<li><button data-p="__all" aria-current="${S.sel==='__all'}"><span class="pname">All activity, newest first</span><span class="pmeta">${S.entries.length}</span></button></li><li class="divider"></li>`;
+  for(const p of ps)h+=`<li class="${p.status!=='Active'?'paused':''}"><button data-p="${esc(p.id)}" aria-current="${S.sel===p.id}"><span class="pname">${esc(p.name)}</span><span class="pmeta">${cnt(p.id)}</span></button></li>`;
+  $('#plist').innerHTML=h;
+  let o=`<option value="__all">All activity, newest first</option>`;
+  for(const p of ps)o+=`<option value="${esc(p.id)}">${esc(p.name)}</option>`;
+  $('#mpick').innerHTML=o;$('#mpick').value=S.sel;
+}
+function entryCard(e,showProj){
+  const p=projById(e.projectId);let dl='';
+  for(const [k,l] of FIELDS)if(e[k])dl+=`<div><dt>${l}</dt><dd>${esc(e[k])}</dd></div>`;
+  return `<li><div class="tdate">${fmtDate(e.date)}</div><article class="card">
+    ${showProj&&p?`<button class="cproj" data-p="${esc(p.id)}">${esc(p.name)}</button>`:''}
+    <div class="ctop"><h3>${esc(e.title||'Untitled entry')}</h3><button class="edit" data-edit="${esc(e.id)}" aria-label="Edit entry">Edit</button></div>
+    ${dl?`<dl>${dl}</dl>`:''}${e.source?`<div class="src">${esc(e.source)}</div>`:''}
+  </article></li>`;
+}
+function renderMain(){
+  const m=$('#main');
+  const notice=S.sample?`<div class="notice">You're looking at sample data. Add your own entry or project and it will be saved in this browser. To start fresh, delete the sample projects' entries or restore from a backup.</div>`:'';
+  if(S.sel==='__all'||!projById(S.sel)){
+    const list=sortEntries(S.entries.filter(matches));
+    m.innerHTML=`${notice}<header class="phead"><h2>${S.q?'Search results':'All activity'}</h2>
+      <p class="summary">${S.q?`Entries matching “${esc(S.q)}” across every project.`:'Everything in the log, newest first, so you can see what happened in what order.'}</p></header>
+      ${list.length?`<ol class="tl">${list.map(e=>entryCard(e,true)).join('')}</ol>`:`<p class="empty">${S.q?'No entries match that search. Try a project code or a single word.':'No entries yet. Create a project, then add your first entry.'}</p>`}`;
+    return;
+  }
+  const p=projById(S.sel);
+  const list=sortEntries(S.entries.filter(e=>e.projectId===p.id&&matches(e)));
+  const codes=String(p.codes||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const st=p.status||'Active';
+  m.innerHTML=`${notice}<header class="phead"><h2>${esc(p.name)}</h2>
+    <div class="codes"><span class="status ${st.toLowerCase()}">${esc(st)}</span>${codes.map(c=>`<span class="code">${esc(c)}</span>`).join('')}</div>
+    ${p.summary?`<p class="summary">${esc(p.summary)}</p>`:''}
+    <div class="pactions"><button class="btn primary" data-add="${esc(p.id)}">Add entry</button><button class="btn" data-editp="${esc(p.id)}">Edit project</button><button class="btn danger" data-delp="${esc(p.id)}">Delete project</button></div>
+  </header>
+  ${list.length?`<ol class="tl">${list.map(e=>entryCard(e,false)).join('')}</ol>`:`<p class="empty">${S.q?'No entries in this project match that search.':'No entries for this project yet.'}</p>`}`;
+}
+function render(){renderRail();renderMain();$('#exportBtn').hidden=!(window.XLSX&&S.entries.length)}
+function select(id){S.sel=id;render();window.scrollTo(0,0)}
+
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-p],[data-edit],[data-add],[data-editp],[data-delp]');if(!b)return;
+  if(b.dataset.p)select(b.dataset.p);
+  else if(b.dataset.edit)openEntry(S.entries.find(e=>e.id===b.dataset.edit));
+  else if(b.dataset.add)openEntry(null,b.dataset.add);
+  else if(b.dataset.editp)openProject(projById(b.dataset.editp));
+  else if(b.dataset.delp)deleteProject(b.dataset.delp);
+});
+$('#mpick').addEventListener('change',e=>select(e.target.value));
+let qt;$('#q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(()=>{S.q=e.target.value.trim();renderMain()},150)});
+
+/* ---------- Entries ---------- */
+let editing=null;
+function openEntry(e,pid){
+  if(!S.projects.length){toast('Create a project first');openProject(null);return}
+  editing=e||null;
+  $('#entryDlgTitle').textContent=e?'Edit entry':'Add entry';
+  $('#e_project').innerHTML=sortedProjects().map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+  $('#e_project').value=e?e.projectId:(pid||(S.sel!=='__all'?S.sel:sortedProjects()[0].id));
+  $('#e_date').value=e?e.date:today();
+  $('#e_title').value=e?e.title||'':'';
+  for(const [k] of FIELDS)$('#e_'+k).value=e?e[k]||'':'';
+  $('#e_delete').hidden=!e;
+  $('#entryDlg').showModal();
+}
+$('#e_cancel').onclick=()=>$('#entryDlg').close();
+$('#e_save').onclick=()=>{
+  const body={projectId:$('#e_project').value,date:$('#e_date').value||today(),title:$('#e_title').value.trim()};
+  for(const [k] of FIELDS)body[k]=$('#e_'+k).value.trim();
+  if(!body.title){toast('Add a title first');return}
+  if(editing)Object.assign(editing,body);
+  else S.entries.push({id:uid(),createdAt:new Date().toISOString(),source:'Added by hand',...body});
+  $('#entryDlg').close();commit();toast('Entry saved');
+};
+$('#e_delete').onclick=()=>{
+  if(!editing||!confirm('Delete this entry? This cannot be undone.'))return;
+  S.entries=S.entries.filter(e=>e!==editing);$('#entryDlg').close();commit();toast('Entry deleted');
+};
+
+/* ---------- Projects ---------- */
+let editingP=null;
+function openProject(p){
+  editingP=p||null;
+  $('#projDlgTitle').textContent=p?'Edit project':'New project';
+  $('#p_name').value=p?p.name||'':'';$('#p_codes').value=p?p.codes||'':'';$('#p_status').value=p?p.status||'Active':'Active';$('#p_summary').value=p?p.summary||'':'';
+  $('#projDlg').showModal();
+}
+$('#p_cancel').onclick=()=>$('#projDlg').close();
+$('#p_save').onclick=()=>{
+  const body={name:$('#p_name').value.trim(),codes:$('#p_codes').value.trim(),status:$('#p_status').value,summary:$('#p_summary').value.trim()};
+  if(!body.name){toast('Add a project name first');return}
+  let id;
+  if(editingP){Object.assign(editingP,body);id=editingP.id}
+  else{id=body.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)||'project';let base=id,n=2;while(projById(id))id=base+'-'+(n++);S.projects.push({id,...body})}
+  $('#projDlg').close();S.sel=id;commit();toast('Project saved');
+};
+function deleteProject(id){
+  const p=projById(id);if(!p)return;
+  const n=S.entries.filter(e=>e.projectId===id).length;
+  if(!confirm(`Delete "${p.name}" and its ${n} entr${n===1?'y':'ies'}? This cannot be undone.`))return;
+  S.projects=S.projects.filter(x=>x.id!==id);S.entries=S.entries.filter(e=>e.projectId!==id);S.sel='__all';commit();toast('Project deleted');
+}
+$('#newEntry').onclick=()=>openEntry(null);
+$('#newProject').onclick=()=>openProject(null);
+
+/* ---------- Excel export: one sheet for all activity, then one per project ---------- */
+$('#exportBtn').onclick=()=>{
+  if(!window.XLSX)return;
+  const head=['Date','Project','Title','What I did','Why it mattered','Supporting facts and sources','Outcome and impact','Skills and tools','Story angle','Source'];
+  const row=e=>{const p=projById(e.projectId);return[e.date||'',p?p.name:'',e.title||'',e.what||'',e.why||'',e.facts||'',e.outcome||'',e.skills||'',e.angle||'',e.source||'']};
+  const cols=[12,28,40,60,50,60,45,30,40,24].map(w=>({wch:w}));
+  const wb=XLSX.utils.book_new();const used=new Set();
+  const nameFor=n=>{let s=String(n).replace(/[\[\]:*?\/\\]/g,' ').trim().slice(0,31)||'Sheet';let b=s,i=2;while(used.has(s.toLowerCase()))s=b.slice(0,28)+' '+(i++);used.add(s.toLowerCase());return s};
+  const add=(title,list)=>{const ws=XLSX.utils.aoa_to_sheet([head,...sortEntries(list).map(row)]);ws['!cols']=cols;XLSX.utils.book_append_sheet(wb,ws,nameFor(title))};
+  add('All activity',S.entries);
+  for(const p of sortedProjects())add(p.name,S.entries.filter(e=>e.projectId===p.id));
+  XLSX.writeFile(wb,'Work-Log-'+today()+'.xlsx');toast('Export downloaded');
+};
+
+/* ---------- Backup and restore (JSON) ---------- */
+$('#backupBtn').onclick=()=>{
+  const blob=new Blob([JSON.stringify({projects:S.projects,entries:S.entries},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Work-Log-backup-'+today()+'.json';a.click();URL.revokeObjectURL(a.href);
+  toast('Backup downloaded');
+};
+$('#restoreBtn').onclick=()=>$('#restoreFile').click();
+$('#restoreFile').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{
+    const d=JSON.parse(await f.text());
+    if(!Array.isArray(d.projects)||!Array.isArray(d.entries))throw 0;
+    if(!confirm(`Replace everything in this log with ${d.projects.length} projects and ${d.entries.length} entries from the backup?`))return;
+    S.projects=d.projects;S.entries=d.entries;S.sel='__all';commit();toast('Backup restored');
+  }catch(err){toast('That file is not a Work Log backup.')}
+};
+
+/* ---------- Boot ---------- */
+const loaded=Store.load();S.projects=loaded.data.projects;S.entries=loaded.data.entries;S.sample=loaded.sample;
+render();
+</script>
+</body>
+</html>
